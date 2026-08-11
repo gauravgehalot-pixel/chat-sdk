@@ -1,0 +1,60 @@
+{
+  "name": "@opsrabbit/chat",
+  "version": "0.1.0",
+  "description": "Headless TypeScript SDK for integrating OpsRabbit agents and conversations into web applications.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "sideEffects": false,
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "files": [
+    "dist",
+    "docs",
+    "examples",
+    "README.md",
+    "CHANGELOG.md",
+    "SECURITY.md",
+    "LICENSE",
+    "NOTICE"
+  ],
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "check": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint .",
+    "test": "vitest run --maxWorkers=1 --no-file-parallelism",
+    "test:coverage": "vitest run --coverage --maxWorkers=1 --no-file-parallelism",
+    "pack:verify": "node scripts/verify-package.mjs",
+    "quality": "npm run lint && npm run check && npm run test:coverage && npm run build && npm run pack:verify",
+    "prepack": "npm run build"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^24.10.0",
+    "@vitest/coverage-v8": "^4.1.10",
+    "eslint": "^10.0.1",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.64.0",
+    "vitest": "^4.1.10"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Ops-Rabbit/chat-sdk.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Ops-Rabbit/chat-sdk/issues"
+  },
+  "homepage": "https://github.com/Ops-Rabbit/chat-sdk#readme"
+}
