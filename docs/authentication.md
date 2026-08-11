@@ -1,5 +1,7 @@
 # Authentication
 
+For the complete administrator and application setup sequence, start with [Set up OpsRabbit for `@opsrabbit/chat`](setup.md).
+
 ## Overview
 
 There are three parties:
