@@ -10,6 +10,8 @@ The SDK supplies transport, public types, safe error mapping, and replayable eve
 npm install @opsrabbit/chat
 ```
 
+Before creating a client, an OpsRabbit administrator and the customer backend owner must configure an Embedded Chat preset and its RSA signing keys. Follow the [end-to-end setup guide](docs/setup.md); the private key stays only in the customer backend, while OpsRabbit stores only the public key.
+
 The initial release is ESM-only and targets modern browsers. Node.js 20 or newer is supported for server-rendering and tests through its standards-compatible Fetch and Web Streams APIs. Repository development and publication use the version pinned in `.nvmrc`.
 
 ## Create a client
@@ -107,6 +109,7 @@ Aborting the local stream does not stop the OpsRabbit turn. Call `chat.turns.sto
 
 ## Documentation
 
+- [End-to-end OpsRabbit setup](docs/setup.md)
 - [Authentication and security](docs/authentication.md)
 - [Conversations and streaming](docs/conversations.md)
 - [API reference](docs/api.md)
