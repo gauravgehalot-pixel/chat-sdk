@@ -20,9 +20,9 @@ Optional `fetch` supplies a standards-compatible Fetch implementation for testin
 
 - `conversations.list({ limit?, cursor? }, options?)`
 - `conversations.get(threadId, { messageLimit?, eventLimit? }, options?)`
-- `conversations.create({ conversationId? })`
+- `conversations.create({ conversationId?, context? })`
 
-The returned handle has `conversationId` and `send()`.
+The returned handle has `conversationId` and `send()`. It snapshots context at creation and includes it until the initial send succeeds; context is never attached to a continuation with an existing `threadId`.
 
 ## Turns
 

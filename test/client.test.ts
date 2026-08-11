@@ -161,6 +161,18 @@ describe("conversation operations", () => {
     expect(getToken).not.toHaveBeenCalled();
   });
 
+  it("retains initial context after token failure and rejects attaching it to a continuation", async () => {
+    const getToken = vi.fn().mockRejectedValueOnce(new Error("token unavailable")).mockResolvedValueOnce("token");
+    const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(json({ thread_id: "thread-1", turn_id: "turn-1", last_event_id: 1 }));
+    const conversation = client(fetchMock, getToken).conversations.create({ conversationId: "retry-context", context: { accountId: "acct-1" } });
+    await expect(conversation.send({ message: "First" })).rejects.toThrow("token unavailable");
+    expect(() => conversation.send({ message: "Invalid", threadId: "existing" })).toThrow(ChatConfigurationError);
+    await conversation.send({ message: "Retry" });
+    const body = fetchMock.mock.calls[0]?.[1]?.body;
+    if (typeof body !== "string") throw new Error("Expected JSON body.");
+    expect(JSON.parse(body)).toMatchObject({ context: { accountId: "acct-1" } });
+  });
+
   it("hydrates scrubbed messages, citations, events, and active turns", async () => {
     const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(json({
       id: "thread-1", conversation_id: "conversation-1", title: "Support", status: "open",

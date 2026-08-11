@@ -296,8 +296,11 @@ export class OpsRabbitChat {
       conversationId,
       send: (message, options) => {
         const initialContext = firstSend ? context : undefined;
-        firstSend = false;
-        return this.#send({ ...message, conversationId }, options, initialContext);
+        if (initialContext && message.threadId) throw new ChatConfigurationError("Initial conversation context cannot be attached to an existing threadId.");
+        return this.#send({ ...message, conversationId }, options, initialContext).then((result) => {
+          firstSend = false;
+          return result;
+        });
       },
     };
   }
