@@ -6,7 +6,7 @@ All notable changes to `@opsrabbit/chat` are documented here. The project follow
 
 - Added a read-only, headless Data Insight API for listing, loading, and rendering published dashboards and for listing, loading, and running published saved semantic queries.
 - Added stable public dashboard, widget, query, filter, and render-result types.
-- Documented widget service-principal grants and the recommended Apache ECharts 6 plus Gridstack rendering stack used by OpsRabbit, with consumer-owned layout persistence.
+- Documented widget service-principal grants and an Apache ECharts rendering example matching the visualization library used by OpsRabbit.
 
 ## 0.1.0 - 2026-08-11
 
