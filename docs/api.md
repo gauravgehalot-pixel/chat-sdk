@@ -20,10 +20,11 @@ Optional `fetch` supplies a standards-compatible Fetch implementation for testin
 
 - `conversations.list({ search?, limit?, cursor? }, options?)`
 - `conversations.get(threadId, { messageLimit?, eventLimit? }, options?)`
-- `conversations.create({ conversationId?, context? })`
+- `conversations.create({ conversationId?, context?, bindings? })`
 
 The returned handle has `conversationId` and `send()`. It snapshots context at creation and includes it until the initial send succeeds; context is never attached to a continuation with an existing `threadId`.
 Context is immutable untrusted application metadata available to the agent for mapping into declared plugin-tool arguments. It is not implicit plugin authorization.
+Bindings are separately snapshotted, immutable JSON delivered directly as `context.conversationBindings` to eligible public plugin tools. They bypass model argument mapping but remain untrusted browser input and must be authorized by the plugin.
 
 ## Turns
 

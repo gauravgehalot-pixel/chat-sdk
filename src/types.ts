@@ -110,6 +110,7 @@ export interface Conversation extends ConversationSummary {
 export interface CreateConversationInput {
   conversationId?: string;
   context?: JsonObject;
+  bindings?: JsonObject;
 }
 
 export type JsonPrimitive = string | number | boolean | null;

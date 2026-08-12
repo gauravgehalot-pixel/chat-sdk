@@ -138,15 +138,18 @@ describe("conversation operations", () => {
       .mockResolvedValueOnce(json({ thread_id: "thread-1", turn_id: "turn-1", last_event_id: 1 }))
       .mockResolvedValueOnce(json({ thread_id: "thread-1", turn_id: "turn-2", last_event_id: 2 }));
     const original = { nested: { value: "original" } };
-    const conversation = client(fetchMock).conversations.create({ conversationId: "context-1", context: original });
+    const bindingSource = { workspaceId: "workspace-1" };
+    const conversation = client(fetchMock).conversations.create({ conversationId: "context-1", context: original, bindings: bindingSource });
     original.nested.value = "mutated";
+    bindingSource.workspaceId = "workspace-2";
     await conversation.send({ message: "First" });
     await conversation.send({ message: "Second", threadId: "thread-1" });
     const firstBody = fetchMock.mock.calls[0]?.[1]?.body;
     const secondBody = fetchMock.mock.calls[1]?.[1]?.body;
     if (typeof firstBody !== "string" || typeof secondBody !== "string") throw new Error("Expected JSON bodies.");
-    expect(JSON.parse(firstBody)).toMatchObject({ context: { nested: { value: "original" } } });
+    expect(JSON.parse(firstBody)).toMatchObject({ context: { nested: { value: "original" } }, bindings: { workspaceId: "workspace-1" } });
     expect(JSON.parse(secondBody)).not.toHaveProperty("context");
+    expect(JSON.parse(secondBody)).not.toHaveProperty("bindings");
   });
 
   it("rejects lossy, cyclic, deep, and oversized context before requesting a token", () => {
@@ -157,6 +160,7 @@ describe("conversation operations", () => {
     expect(() => chat.conversations.create({ context: cyclic as never })).toThrow(ChatConfigurationError);
     expect(() => chat.conversations.create({ context: { invalid: BigInt(1) } as never })).toThrow(ChatConfigurationError);
     expect(() => chat.conversations.create({ context: { value: "x".repeat(17_000) } })).toThrow(ChatConfigurationError);
+    expect(() => chat.conversations.create({ bindings: { value: "x".repeat(17_000) } })).toThrow(ChatConfigurationError);
     let deep: Record<string, unknown> = {};
     for (let index = 0; index < 9; index += 1) deep = { child: deep };
     expect(() => chat.conversations.create({ context: deep as never })).toThrow(ChatConfigurationError);

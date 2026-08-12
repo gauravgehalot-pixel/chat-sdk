@@ -64,6 +64,7 @@ OpsRabbit returns only conversations bound to the token's exact external user, w
 ```ts
 const conversation = chat.conversations.create({
   context: { accountId: "acct-123", orderId: "order-456", locale: "en-US" },
+  bindings: { workspaceId: "workspace-123" },
 });
 const turn = await conversation.send({ message: "Why did checkout fail?" });
 

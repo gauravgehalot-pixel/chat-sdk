@@ -69,28 +69,28 @@ function normalizeIdentifier(value: string, label: string): string {
   return normalized;
 }
 
-function snapshotContext(value: unknown): JsonRecord | undefined {
+function snapshotJsonObject(value: unknown, field = "context"): JsonRecord | undefined {
   if (value === undefined) return undefined;
-  if (!value || typeof value !== "object" || Array.isArray(value)) throw new ChatConfigurationError("context must be a JSON object.");
+  if (!value || typeof value !== "object" || Array.isArray(value)) throw new ChatConfigurationError(`${field} must be a JSON object.`);
   let keys = 0;
   const seen = new Set<object>();
   const copy = (entry: unknown, depth: number): unknown => {
-    if (depth > MAX_CONTEXT_DEPTH) throw new ChatConfigurationError(`context must be at most ${String(MAX_CONTEXT_DEPTH)} levels deep.`);
+    if (depth > MAX_CONTEXT_DEPTH) throw new ChatConfigurationError(`${field} must be at most ${String(MAX_CONTEXT_DEPTH)} levels deep.`);
     if (entry === null || typeof entry === "string" || typeof entry === "boolean") return entry;
     if (typeof entry === "number" && Number.isFinite(entry)) return entry;
-    if (!entry || typeof entry !== "object") throw new ChatConfigurationError("context must contain only JSON values.");
-    if (seen.has(entry)) throw new ChatConfigurationError("context must be acyclic JSON data.");
+    if (!entry || typeof entry !== "object") throw new ChatConfigurationError(`${field} must contain only JSON values.`);
+    if (seen.has(entry)) throw new ChatConfigurationError(`${field} must be acyclic JSON data.`);
     seen.add(entry);
     let result: unknown;
     if (Array.isArray(entry)) {
       result = entry.map((item) => copy(item, depth + 1));
     } else {
-      if (Object.getPrototypeOf(entry) !== Object.prototype) throw new ChatConfigurationError("context must contain only plain JSON objects.");
+      if (Object.getPrototypeOf(entry) !== Object.prototype) throw new ChatConfigurationError(`${field} must contain only plain JSON objects.`);
       const objectResult: JsonRecord = {};
       for (const key of Object.keys(entry).sort()) {
         keys += 1;
-        if (keys > MAX_CONTEXT_KEYS) throw new ChatConfigurationError(`context must contain at most ${String(MAX_CONTEXT_KEYS)} keys.`);
-        if (key === "__proto__" || key === "prototype" || key === "constructor") throw new ChatConfigurationError("context contains a reserved key.");
+        if (keys > MAX_CONTEXT_KEYS) throw new ChatConfigurationError(`${field} must contain at most ${String(MAX_CONTEXT_KEYS)} keys.`);
+        if (key === "__proto__" || key === "prototype" || key === "constructor") throw new ChatConfigurationError(`${field} contains a reserved key.`);
         objectResult[key] = copy((entry as Record<string, unknown>)[key], depth + 1);
       }
       result = objectResult;
@@ -99,7 +99,7 @@ function snapshotContext(value: unknown): JsonRecord | undefined {
     return result;
   };
   const snapshot = copy(value, 1) as JsonRecord;
-  if (new TextEncoder().encode(JSON.stringify(snapshot)).byteLength > MAX_CONTEXT_BYTES) throw new ChatConfigurationError(`context must be ${String(MAX_CONTEXT_BYTES)} UTF-8 bytes or fewer.`);
+  if (new TextEncoder().encode(JSON.stringify(snapshot)).byteLength > MAX_CONTEXT_BYTES) throw new ChatConfigurationError(`${field} must be ${String(MAX_CONTEXT_BYTES)} UTF-8 bytes or fewer.`);
   return snapshot;
 }
 
@@ -290,14 +290,16 @@ export class OpsRabbitChat {
       : generatedConversationId;
     if (!conversationId) throw new ChatConfigurationError("conversationId is required when crypto.randomUUID is unavailable.");
     normalizeIdentifier(conversationId, "conversationId");
-    const context = snapshotContext(input.context);
+    const context = snapshotJsonObject(input.context);
+    const bindings = snapshotJsonObject(input.bindings, "bindings");
     let firstSend = true;
     return {
       conversationId,
       send: (message, options) => {
         const initialContext = firstSend ? context : undefined;
-        if (initialContext && message.threadId) throw new ChatConfigurationError("Initial conversation context cannot be attached to an existing threadId.");
-        return this.#send({ ...message, conversationId }, options, initialContext).then((result) => {
+        const initialBindings = firstSend ? bindings : undefined;
+        if ((initialContext || initialBindings) && message.threadId) throw new ChatConfigurationError("Initial conversation context or bindings cannot be attached to an existing threadId.");
+        return this.#send({ ...message, conversationId }, options, initialContext, initialBindings).then((result) => {
           firstSend = false;
           return result;
         });
@@ -347,7 +349,7 @@ export class OpsRabbitChat {
     };
   }
 
-  async #send(input: SendMessageInput, options?: RequestOptions, context?: JsonRecord): Promise<Turn> {
+  async #send(input: SendMessageInput, options?: RequestOptions, context?: JsonRecord, bindings?: JsonRecord): Promise<Turn> {
     const payload = await this.#post<JsonRecord>("/widget/chat/turns", "send_message", {
       ...this.#authBody(),
       conversation_id: normalizeIdentifier(input.conversationId, "conversationId"),
@@ -355,6 +357,7 @@ export class OpsRabbitChat {
       ...(input.threadId ? { thread_id: normalizeIdentifier(input.threadId, "threadId") } : {}),
       ...(input.title ? { title: input.title.trim() } : {}),
       ...(context ? { context } : {}),
+      ...(bindings ? { bindings } : {}),
     }, options);
     const userMessageId = optionalString(payload.user_message_id);
     return {

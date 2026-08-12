@@ -5,6 +5,7 @@ All notable changes to `@opsrabbit/chat` are documented here. The project follow
 ## 0.2.0 - 2026-08-12
 
 - Added caller-scoped conversation search across titles and persisted user/assistant messages through `conversations.list({ search })`.
+- Added immutable `conversations.create({ bindings })` for deterministic, untrusted public plugin-tool context.
 
 ## 0.1.0 - 2026-08-11
 
