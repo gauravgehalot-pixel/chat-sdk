@@ -19,25 +19,13 @@ import type {
   ConversationSummary,
   CreateConversationInput,
   GetConversationInput,
-  InsightDashboard,
-  InsightDashboardList,
-  InsightDashboardWidget,
-  InsightWidgetType,
-  JsonObject,
-  ListInsightsInput,
   KnowledgeCitation,
   ListConversationsInput,
   OpsRabbitChatOptions,
-  RenderedInsightDashboard,
-  RenderedInsightWidget,
-  RenderInsightDashboardInput,
   ReadCitationInput,
   RequestOptions,
   ResolveApprovalInput,
   SendMessageInput,
-  SavedInsightQuery,
-  SavedInsightQueryList,
-  SavedInsightQueryResult,
   SteerResult,
   SteerTurnInput,
   StopResult,
@@ -48,7 +36,7 @@ import type {
   Turn,
 } from "./types.js";
 
-const SDK_VERSION = "0.2.0";
+const SDK_VERSION = "0.1.0";
 const MAX_CONTEXT_BYTES = 16 * 1024;
 const MAX_CONTEXT_DEPTH = 8;
 const MAX_CONTEXT_KEYS = 64;
@@ -202,63 +190,6 @@ function mapMessage(value: unknown): ChatMessage {
   };
 }
 
-function nullableString(value: unknown): string | null {
-  return typeof value === "string" ? value : null;
-}
-
-function jsonObject(value: unknown, context: string): Readonly<JsonObject> {
-  return Object.freeze(asRecord(value, context) as JsonObject);
-}
-
-function mapSavedInsightQuery(value: unknown): SavedInsightQuery {
-  const item = asRecord(value, "Saved Insight query");
-  return {
-    id: requiredString(item.id, "query.id"),
-    name: requiredString(item.name, "query.name"),
-    description: nullableString(item.description),
-    providerPluginId: requiredString(item.provider_plugin_id, "query.provider_plugin_id"),
-    datasetId: nullableString(item.dataset_id),
-    semanticQuery: jsonObject(item.semantic_query, "Saved Insight query semantic_query"),
-    visualizationHint: nullableString(item.visualization_hint),
-    createdAt: nullableString(item.created_at),
-    updatedAt: nullableString(item.updated_at),
-  };
-}
-
-const INSIGHT_WIDGET_TYPES = new Set(["metric", "table", "text", "bar", "line", "area", "pie", "donut", "scatter"]);
-
-function mapInsightWidget(value: unknown): InsightDashboardWidget {
-  const item = asRecord(value, "Insight dashboard widget");
-  const type = requiredString(item.type, "widget.type");
-  if (!INSIGHT_WIDGET_TYPES.has(type)) throw new ChatProtocolError(`Unsupported Insight widget type: ${type}.`);
-  return {
-    id: requiredString(item.id, "widget.id"),
-    type: type as InsightWidgetType,
-    title: requiredString(item.title, "widget.title"),
-    description: nullableString(item.description),
-    savedQueryId: nullableString(item.saved_query_id),
-    textContent: nullableString(item.text_content),
-    config: jsonObject(item.config, "Insight dashboard widget config"),
-    position: jsonObject(item.position, "Insight dashboard widget position"),
-    createdAt: nullableString(item.created_at),
-    updatedAt: nullableString(item.updated_at),
-  };
-}
-
-function mapInsightDashboard(value: unknown): InsightDashboard {
-  const item = asRecord(value, "Insight dashboard");
-  if (!Array.isArray(item.widgets)) throw new ChatProtocolError("Insight dashboard widgets were malformed.");
-  return {
-    id: requiredString(item.id, "dashboard.id"),
-    title: requiredString(item.title, "dashboard.title"),
-    description: nullableString(item.description),
-    layout: jsonObject(item.layout, "Insight dashboard layout"),
-    widgets: item.widgets.map(mapInsightWidget),
-    createdAt: nullableString(item.created_at),
-    updatedAt: nullableString(item.updated_at),
-  };
-}
-
 export class OpsRabbitChat {
   readonly conversations: {
     list: (input?: ListConversationsInput, options?: RequestOptions) => Promise<ConversationPage>;
@@ -276,18 +207,6 @@ export class OpsRabbitChat {
   };
   readonly citations: {
     read: (input: ReadCitationInput, options?: RequestOptions) => Promise<CitationContent>;
-  };
-  readonly insights: {
-    queries: {
-      list: (input?: ListInsightsInput, options?: RequestOptions) => Promise<SavedInsightQueryList>;
-      get: (id: string, options?: RequestOptions) => Promise<SavedInsightQuery>;
-      run: (id: string, options?: RequestOptions) => Promise<SavedInsightQueryResult>;
-    };
-    dashboards: {
-      list: (input?: ListInsightsInput, options?: RequestOptions) => Promise<InsightDashboardList>;
-      get: (id: string, options?: RequestOptions) => Promise<InsightDashboard>;
-      render: (id: string, input?: RenderInsightDashboardInput, options?: RequestOptions) => Promise<RenderedInsightDashboard>;
-    };
   };
 
   readonly #baseUrl: string;
@@ -335,18 +254,6 @@ export class OpsRabbitChat {
     this.citations = {
       read: (input, requestOptions) => this.#readCitation(input, requestOptions),
     };
-    this.insights = {
-      queries: {
-        list: (input, requestOptions) => this.#listInsightQueries(input, requestOptions),
-        get: (id, requestOptions) => this.#getInsightQuery(id, requestOptions),
-        run: (id, requestOptions) => this.#runInsightQuery(id, requestOptions),
-      },
-      dashboards: {
-        list: (input, requestOptions) => this.#listInsightDashboards(input, requestOptions),
-        get: (id, requestOptions) => this.#getInsightDashboard(id, requestOptions),
-        render: (id, input, requestOptions) => this.#renderInsightDashboard(id, input, requestOptions),
-      },
-    };
   }
 
   async getConfiguration(options?: RequestOptions): Promise<ChatConfiguration> {
@@ -361,12 +268,6 @@ export class OpsRabbitChat {
       externalDisplayName: typeof payload.external_display_name === "string" ? payload.external_display_name : null,
       threadRetentionMinutes: numberValue(widget.thread_retention_minutes),
       settings: Object.freeze(asRecord(widget.settings, "Configuration settings")),
-      capabilities: Object.freeze({
-        insights: payload.capabilities !== null
-          && typeof payload.capabilities === "object"
-          && !Array.isArray(payload.capabilities)
-          && (payload.capabilities as JsonRecord).insights === true,
-      }),
     };
   }
 
@@ -480,69 +381,6 @@ export class OpsRabbitChat {
       bytes: await response.arrayBuffer(),
       contentType: response.headers.get("content-type") ?? "application/octet-stream",
       contentDisposition: response.headers.get("content-disposition"),
-    };
-  }
-
-  #insightsQuery(input: ListInsightsInput = {}): URLSearchParams {
-    const query = this.#authQuery();
-    query.set("limit", String(normalizeLimit(input.limit, 20, 100, "limit")));
-    return query;
-  }
-
-  async #listInsightQueries(input: ListInsightsInput = {}, options?: RequestOptions): Promise<SavedInsightQueryList> {
-    const payload = await this.#requestJson<JsonRecord>(`/widget/chat/insights/queries?${this.#insightsQuery(input)}`, "list_insight_queries", requestInit("GET", options?.signal));
-    if (!Array.isArray(payload.queries)) throw new ChatProtocolError("Saved Insight query list response was malformed.");
-    return { queries: payload.queries.map(mapSavedInsightQuery) };
-  }
-
-  async #getInsightQuery(id: string, options?: RequestOptions): Promise<SavedInsightQuery> {
-    const payload = await this.#requestJson<JsonRecord>(`/widget/chat/insights/queries/${encodeURIComponent(normalizeIdentifier(id, "query id"))}?${this.#authQuery()}`, "get_insight_query", requestInit("GET", options?.signal));
-    return mapSavedInsightQuery(payload.query);
-  }
-
-  async #runInsightQuery(id: string, options?: RequestOptions): Promise<SavedInsightQueryResult> {
-    const payload = await this.#post<JsonRecord>(`/widget/chat/insights/queries/${encodeURIComponent(normalizeIdentifier(id, "query id"))}/run`, "run_insight_query", this.#authBody(), options);
-    return { query: mapSavedInsightQuery(payload.query), result: payload.result };
-  }
-
-  async #listInsightDashboards(input: ListInsightsInput = {}, options?: RequestOptions): Promise<InsightDashboardList> {
-    const payload = await this.#requestJson<JsonRecord>(`/widget/chat/insights/dashboards?${this.#insightsQuery(input)}`, "list_insight_dashboards", requestInit("GET", options?.signal));
-    if (!Array.isArray(payload.dashboards)) throw new ChatProtocolError("Insight dashboard list response was malformed.");
-    return { dashboards: payload.dashboards.map(mapInsightDashboard) };
-  }
-
-  async #getInsightDashboard(id: string, options?: RequestOptions): Promise<InsightDashboard> {
-    const payload = await this.#requestJson<JsonRecord>(`/widget/chat/insights/dashboards/${encodeURIComponent(normalizeIdentifier(id, "dashboard id"))}?${this.#authQuery()}`, "get_insight_dashboard", requestInit("GET", options?.signal));
-    return mapInsightDashboard(payload.dashboard);
-  }
-
-  async #renderInsightDashboard(id: string, input: RenderInsightDashboardInput = {}, options?: RequestOptions): Promise<RenderedInsightDashboard> {
-    for (const [label, value] of [["hourlyCostUsd", input.hourlyCostUsd], ["minutesSaved", input.minutesSaved]] as const) {
-      if (value !== undefined && (!Number.isFinite(value) || value < 0)) {
-        throw new ChatConfigurationError(`${label} must be a non-negative finite number.`);
-      }
-    }
-    const payload = await this.#post<JsonRecord>(`/widget/chat/insights/dashboards/${encodeURIComponent(normalizeIdentifier(id, "dashboard id"))}/render`, "render_insight_dashboard", {
-      ...this.#authBody(),
-      ...(input.range ? { range: normalizeIdentifier(input.range, "range") } : {}),
-      ...(input.agentBases ? { agent_bases: input.agentBases.map((value) => normalizeIdentifier(value, "agentBases[]")) } : {}),
-      ...(input.sourceId !== undefined ? { source_id: input.sourceId } : {}),
-      ...(input.hourlyCostUsd !== undefined ? { hourly_cost_usd: input.hourlyCostUsd } : {}),
-      ...(input.minutesSaved !== undefined ? { minutes_saved: input.minutesSaved } : {}),
-    }, options);
-    if (!Array.isArray(payload.widgets)) throw new ChatProtocolError("Rendered Insight dashboard widgets were malformed.");
-    return {
-      dashboard: mapInsightDashboard(payload.dashboard),
-      widgets: payload.widgets.map((value): RenderedInsightWidget => {
-        const item = asRecord(value, "Rendered Insight widget");
-        return {
-          widget: mapInsightWidget(item.widget),
-          ok: item.ok === true,
-          ...(item.query !== undefined ? { query: mapSavedInsightQuery(item.query) } : {}),
-          ...(item.result !== undefined ? { result: item.result } : {}),
-          ...(typeof item.error === "string" ? { error: item.error } : {}),
-        };
-      }),
     };
   }
 

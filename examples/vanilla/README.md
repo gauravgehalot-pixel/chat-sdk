@@ -10,7 +10,7 @@ This example renders a minimal transcript without a UI framework. Serve it from 
 </form>
 
 <script type="module">
-import { OpsRabbitChat } from "https://esm.sh/@opsrabbit/chat@0.2.0";
+  import { OpsRabbitChat } from "https://esm.sh/@opsrabbit/chat@0.1.0";
 
   const chat = new OpsRabbitChat({
     baseUrl: "https://opsrabbit.example.com/api",

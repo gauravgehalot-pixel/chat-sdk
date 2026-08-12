@@ -1,6 +1,6 @@
 {
   "name": "@opsrabbit/chat",
-  "version": "0.2.0",
+  "version": "0.1.0",
   "description": "Headless TypeScript SDK for integrating OpsRabbit agents and conversations into web applications.",
   "license": "Apache-2.0",
   "type": "module",

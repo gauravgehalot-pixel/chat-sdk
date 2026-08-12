@@ -123,19 +123,6 @@ The frontend receives only short-lived JWTs. It never receives the private key, 
 5. Confirm a different signed-in application user cannot list or hydrate the first user's conversations.
 6. Confirm disabling the preset or revoking its agent access blocks the next operation.
 
-## Optional: publish Data Insight resources
-
-The SDK does not make tenant dashboards public automatically. To expose an existing dashboard or saved semantic query:
-
-1. In OpsRabbit, identify the Embedded Chat preset's production service principal.
-2. Open the resource's **Resource Access** controls.
-3. Grant that service principal `read` access for discovery and `use` access for execution.
-4. For a dashboard, grant `use` on every saved query referenced by its widgets. A dashboard grant never bypasses query authorization.
-5. If the resource must work in **Open preview**, apply equivalent grants to the preset's separate test service principal.
-6. Verify the resource appears through `chat.insights.dashboards.list()` or `chat.insights.queries.list()`.
-
-These grants apply to every external user authenticated through that preset because the preset service principal—not `external_user_id`—is the Data Insight resource principal. Use separate presets when applications require different published Insight sets. Revoking a grant takes effect on the next request.
-
 Common failures:
 
 | Status | Typical cause |

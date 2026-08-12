@@ -56,19 +56,18 @@ describe("OpsRabbitChat configuration", () => {
 
   it("loads the effective, versioned server configuration", async () => {
     const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(json({
-      chat_api_version: "2",
-      capabilities: { insights: true },
+      chat_api_version: "1",
       widget: { id: "widget-1", tenant_id: "tenant-a", agent_name: "support-agent", thread_retention_minutes: 30, settings: { showActivity: "hidden" } },
       external_user_id: "customer-user-1",
       external_display_name: "Customer User",
     }));
     const getToken = vi.fn(() => "token-1");
     const configuration = await client(fetchMock, getToken).getConfiguration();
-    expect(configuration).toMatchObject({ apiVersion: "2", externalUserId: "customer-user-1", threadRetentionMinutes: 30, capabilities: { insights: true } });
+    expect(configuration).toMatchObject({ apiVersion: "1", externalUserId: "customer-user-1", threadRetentionMinutes: 30 });
     expect(getToken).toHaveBeenCalledWith({ reason: "configuration", agentName: "support-agent", widgetId: "widget-1", tenantId: "tenant-a" });
     const [, request] = firstFetchCall(fetchMock);
     expect(new Headers(request?.headers).get("authorization")).toBe("Bearer token-1");
-    expect(new Headers(request?.headers).get("x-opsrabbit-chat-sdk-version")).toBe("0.2.0");
+    expect(new Headers(request?.headers).get("x-opsrabbit-chat-sdk-version")).toBe("0.1.0");
   });
 
   it("uses safe defaults for optional configuration attribution", async () => {
@@ -78,7 +77,6 @@ describe("OpsRabbitChat configuration", () => {
     }));
     await expect(client(fetchMock).getConfiguration()).resolves.toMatchObject({
       apiVersion: "1", externalDisplayName: null, threadRetentionMinutes: 0,
-      capabilities: { insights: false },
     });
   });
 });
@@ -207,71 +205,6 @@ describe("conversation operations", () => {
     await expect(chat.turns.send({ conversationId: "x", message: " " })).rejects.toBeInstanceOf(ChatConfigurationError);
     await expect(chat.turns.events({ threadId: "thread-1", afterEventId: -1 })[Symbol.asyncIterator]().next()).rejects.toBeInstanceOf(ChatConfigurationError);
     expect(fetchMock).not.toHaveBeenCalled();
-  });
-});
-
-describe("Data Insight operations", () => {
-  const query = {
-    id: "query-1", name: "Cases", description: null, provider_plugin_id: "forms:cases",
-    dataset_id: "cases", semantic_query: { measures: ["count"] }, visualization_hint: "bar",
-    created_at: "2026-08-12T00:00:00.000Z", updated_at: null,
-  };
-  const widget = {
-    id: "widget-1", type: "bar", title: "Cases by status", description: null,
-    saved_query_id: "query-1", text_content: null, config: { x: "status", y: "count" },
-    position: { x: 0, y: 0, width: 6, height: 4 }, created_at: null, updated_at: null,
-  };
-  const dashboard = {
-    id: "dashboard-1", title: "Case Operations", description: null, layout: { columns: 12 },
-    widgets: [widget], created_at: "2026-08-12T00:00:00.000Z", updated_at: null,
-  };
-
-  it("lists and maps published saved queries", async () => {
-    const getToken = vi.fn(() => "token-1");
-    const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(json({ queries: [query] }));
-    const result = await client(fetchMock, getToken).insights.queries.list({ limit: 10 });
-    expect(result.queries[0]).toMatchObject({ id: "query-1", providerPluginId: "forms:cases", datasetId: "cases", visualizationHint: "bar" });
-    expect(requestUrl(firstFetchCall(fetchMock)[0])).toContain("/widget/chat/insights/queries?");
-    expect(requestUrl(firstFetchCall(fetchMock)[0])).toContain("limit=10");
-    expect(getToken).toHaveBeenCalledWith(expect.objectContaining({ reason: "list_insight_queries" }));
-  });
-
-  it("gets and runs a published saved query", async () => {
-    const fetchMock = vi.fn<typeof fetch>()
-      .mockResolvedValueOnce(json({ query }))
-      .mockResolvedValueOnce(json({ query, result: { rows: [{ status: "open", count: 4 }] } }));
-    const chat = client(fetchMock);
-    await expect(chat.insights.queries.get("query-1")).resolves.toMatchObject({ name: "Cases" });
-    await expect(chat.insights.queries.run("query-1")).resolves.toMatchObject({ result: { rows: [{ count: 4 }] } });
-    const runBody = fetchMock.mock.calls[1]?.[1]?.body;
-    if (typeof runBody !== "string") throw new Error("Expected a JSON request body.");
-    expect(JSON.parse(runBody)).toEqual({ widget_id: "widget-1", tenant_id: "tenant-a", agent_name: "support-agent" });
-  });
-
-  it("lists, gets, and renders published dashboards", async () => {
-    const getToken = vi.fn(() => "token-1");
-    const fetchMock = vi.fn<typeof fetch>()
-      .mockResolvedValueOnce(json({ dashboards: [dashboard] }))
-      .mockResolvedValueOnce(json({ dashboard }))
-      .mockResolvedValueOnce(json({ dashboard, widgets: [{ widget, ok: true, query, result: { rows: [] } }] }));
-    const chat = client(fetchMock, getToken);
-    await expect(chat.insights.dashboards.list()).resolves.toMatchObject({ dashboards: [{ id: "dashboard-1" }] });
-    await expect(chat.insights.dashboards.get("dashboard-1")).resolves.toMatchObject({ widgets: [{ type: "bar", savedQueryId: "query-1" }] });
-    await expect(chat.insights.dashboards.render("dashboard-1", {
-      range: "30d", agentBases: ["support_agent"], sourceId: null, hourlyCostUsd: 100, minutesSaved: 15,
-    })).resolves.toMatchObject({ widgets: [{ ok: true, query: { id: "query-1" } }] });
-    const renderBody = fetchMock.mock.calls[2]?.[1]?.body;
-    if (typeof renderBody !== "string") throw new Error("Expected a JSON request body.");
-    expect(JSON.parse(renderBody)).toMatchObject({ range: "30d", agent_bases: ["support_agent"], source_id: null, hourly_cost_usd: 100, minutes_saved: 15 });
-    expect(getToken).toHaveBeenLastCalledWith(expect.objectContaining({ reason: "render_insight_dashboard" }));
-  });
-
-  it("rejects malformed Insight responses and invalid inputs", async () => {
-    const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(json({ dashboards: [{ ...dashboard, widgets: [{ ...widget, type: "script" }] }] }));
-    const chat = client(fetchMock);
-    await expect(chat.insights.dashboards.list({ limit: 0 })).rejects.toBeInstanceOf(ChatConfigurationError);
-    await expect(chat.insights.dashboards.list()).rejects.toBeInstanceOf(ChatProtocolError);
-    await expect(chat.insights.dashboards.render("dashboard-1", { hourlyCostUsd: Number.NaN })).rejects.toBeInstanceOf(ChatConfigurationError);
   });
 });
 
