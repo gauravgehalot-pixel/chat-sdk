@@ -51,6 +51,7 @@ export interface ChatConfiguration {
 export interface ListConversationsInput {
   limit?: number;
   cursor?: string;
+  search?: string;
 }
 
 export interface ConversationSummary {

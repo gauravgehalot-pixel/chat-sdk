@@ -67,7 +67,7 @@ describe("OpsRabbitChat configuration", () => {
     expect(getToken).toHaveBeenCalledWith({ reason: "configuration", agentName: "support-agent", widgetId: "widget-1", tenantId: "tenant-a" });
     const [, request] = firstFetchCall(fetchMock);
     expect(new Headers(request?.headers).get("authorization")).toBe("Bearer token-1");
-    expect(new Headers(request?.headers).get("x-opsrabbit-chat-sdk-version")).toBe("0.1.0");
+    expect(new Headers(request?.headers).get("x-opsrabbit-chat-sdk-version")).toBe("0.2.0");
   });
 
   it("uses safe defaults for optional configuration attribution", async () => {
@@ -89,13 +89,15 @@ describe("conversation operations", () => {
         created_at: "2026-08-11T00:00:00.000Z", updated_at: "2026-08-11T00:01:00.000Z", message_count: 2,
         active_turns: [{ turn_id: "turn-1", status: "running" }],
       }],
+      search_applied: true,
       next_cursor: "cursor-2",
     }));
-    const result = await client(fetchMock).conversations.list({ limit: 10, cursor: "cursor-1" });
+    const result = await client(fetchMock).conversations.list({ limit: 10, cursor: "cursor-1", search: " payment failure " });
     expect(result.conversations[0]).toMatchObject({ id: "thread-1", conversationId: "conversation-1", messageCount: 2 });
     expect(result.nextCursor).toBe("cursor-2");
     expect(requestUrl(firstFetchCall(fetchMock)[0])).toContain("limit=10");
     expect(requestUrl(firstFetchCall(fetchMock)[0])).toContain("cursor=cursor-1");
+    expect(requestUrl(firstFetchCall(fetchMock)[0])).toContain("search=payment+failure");
   });
 
   it("creates a local handle and sends a new turn without retaining the token", async () => {
@@ -202,9 +204,18 @@ describe("conversation operations", () => {
     const fetchMock = vi.fn<typeof fetch>();
     const chat = client(fetchMock);
     await expect(chat.conversations.list({ limit: 0 })).rejects.toBeInstanceOf(ChatConfigurationError);
+    await expect(chat.conversations.list({ search: "x".repeat(201) })).rejects.toBeInstanceOf(ChatConfigurationError);
+    await expect(chat.conversations.list({ search: null as never })).rejects.toBeInstanceOf(ChatConfigurationError);
+    await expect(chat.conversations.list({ search: 42 as never })).rejects.toBeInstanceOf(ChatConfigurationError);
+    await expect(chat.conversations.list({ search: "bad\0query" })).rejects.toBeInstanceOf(ChatConfigurationError);
     await expect(chat.turns.send({ conversationId: "x", message: " " })).rejects.toBeInstanceOf(ChatConfigurationError);
     await expect(chat.turns.events({ threadId: "thread-1", afterEventId: -1 })[Symbol.asyncIterator]().next()).rejects.toBeInstanceOf(ChatConfigurationError);
     expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("fails closed when an older host does not acknowledge conversation search", async () => {
+    const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(json({ conversations: [], next_cursor: null }));
+    await expect(client(fetchMock).conversations.list({ search: "payment" })).rejects.toBeInstanceOf(ChatProtocolError);
   });
 });
 

@@ -36,7 +36,7 @@ import type {
   Turn,
 } from "./types.js";
 
-const SDK_VERSION = "0.1.0";
+const SDK_VERSION = "0.2.0";
 const MAX_CONTEXT_BYTES = 16 * 1024;
 const MAX_CONTEXT_DEPTH = 8;
 const MAX_CONTEXT_KEYS = 64;
@@ -309,8 +309,18 @@ export class OpsRabbitChat {
     const query = this.#authQuery();
     query.set("limit", String(normalizeLimit(input.limit, 20, 100, "limit")));
     if (input.cursor) query.set("cursor", normalizeIdentifier(input.cursor, "cursor"));
+    if (input.search !== undefined) {
+      if (typeof input.search !== "string") throw new ChatConfigurationError("search must be a string.");
+      const search = input.search.trim();
+      if (search.length > 200) throw new ChatConfigurationError("search must be 200 characters or fewer.");
+      if (search.includes("\0")) throw new ChatConfigurationError("search contains an invalid character.");
+      if (search) query.set("search", search);
+    }
     const payload = await this.#requestJson<JsonRecord>(`/widget/chat/conversations?${query}`, "list_conversations", requestInit("GET", options?.signal));
     if (!Array.isArray(payload.conversations)) throw new ChatProtocolError("Conversation list response was malformed.");
+    if (input.search?.trim() && payload.search_applied !== true) {
+      throw new ChatProtocolError("The OpsRabbit host does not support conversation search required by this request.");
+    }
     return {
       conversations: payload.conversations.map(mapConversationSummary),
       nextCursor: typeof payload.next_cursor === "string" ? payload.next_cursor : null,
