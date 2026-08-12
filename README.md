@@ -118,7 +118,7 @@ const rendered = await chat.insights.dashboards.render(available.dashboards[0].i
 });
 ```
 
-OpsRabbit uses [Apache ECharts](https://echarts.apache.org/) 6 for its own Data Insight visualizations. Applications wanting similar behavior can use ECharts, but it is not an SDK dependency and any charting or design system can render the returned data. See [Data Insight and ECharts](docs/insights.md).
+OpsRabbit uses [Apache ECharts](https://echarts.apache.org/) 6 for chart visualization and [Gridstack](https://gridstackjs.com/) for draggable and resizable dashboard layouts. Applications wanting similar behavior can use the same combination, but neither library is an SDK dependency. The consuming application owns its interactive layout state and persistence; OpsRabbit's returned layout is an initial/default layout contract. See [Data Insight dashboards, ECharts, and Gridstack](docs/insights.md).
 
 ## Documentation
 
@@ -126,7 +126,7 @@ OpsRabbit uses [Apache ECharts](https://echarts.apache.org/) 6 for its own Data 
 - [Authentication and security](docs/authentication.md)
 - [Conversations and streaming](docs/conversations.md)
 - [API reference](docs/api.md)
-- [Data Insight dashboards and ECharts](docs/insights.md)
+- [Data Insight dashboards, ECharts, and Gridstack](docs/insights.md)
 - [Vanilla browser example](examples/vanilla/README.md)
 - [Token endpoint example](examples/token-server/README.md)
 - [Security policy](SECURITY.md)

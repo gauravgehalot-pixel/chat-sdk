@@ -26,14 +26,14 @@ const queries = await chat.insights.queries.list();
 const { query, result } = await chat.insights.queries.run(queries.queries[0].id);
 ```
 
-## Recommended visualization library
+## Recommended visualization and layout libraries
 
-The OpsRabbit web application uses [Apache ECharts](https://echarts.apache.org/) 6 and its SVG renderer for Data Insight charts. ECharts is the recommended option when an integrating frontend wants similar responsive line, area, bar, pie, donut, and scatter visualizations.
+The OpsRabbit web application uses [Apache ECharts](https://echarts.apache.org/) 6 with its SVG renderer for Data Insight charts and [Gridstack](https://gridstackjs.com/) for draggable, resizable dashboard layouts. This is the recommended combination when an integrating frontend wants behavior similar to OpsRabbit.
 
-ECharts is deliberately not bundled with `@opsrabbit/chat`. Install it in the application:
+Neither library is bundled with `@opsrabbit/chat`. Install them in the application:
 
 ```bash
-npm install echarts
+npm install echarts gridstack
 ```
 
 A minimal adapter can interpret the dashboard widget configuration and result rows:
@@ -58,6 +58,14 @@ if (item) {
 
 Production adapters should validate column names, handle empty/error results, format values by unit, dispose chart instances, and resize them with their containers. The widget `config` and `position` objects are presentation hints rather than executable code; never evaluate their contents.
 
+## Layout ownership and persistence
+
+OpsRabbit returns `dashboard.layout` and each widget's `position` as an initial/default layout. The application using `@opsrabbit/chat` owns subsequent interactive layout state, including Gridstack drag, drop, resize, responsive-breakpoint behavior, and persistence.
+
+For example, the application can load OpsRabbit's initial positions, let Gridstack update them, and save the resulting coordinates in its own backend under its own stable user/dashboard identity. On the next load, it can overlay that saved application layout on the current OpsRabbit dashboard definition. The application should remove stale positions for widgets that no longer exist and fall back to OpsRabbit positions for newly added widgets.
+
+This separation is intentional: the public SDK does not mutate the canonical OpsRabbit dashboard or persist consumer-specific layout preferences. If an application persists layout state, it owns authorization, tenant/user scoping, retention, deletion, schema migration, and conflict handling for that data.
+
 OpsRabbit rejects provider results that exceed the public row, column, nesting, string, object-key, node-count, or cumulative 512 KiB render budget. It does not silently truncate analytics data.
 
 ## Security and ownership
@@ -67,5 +75,5 @@ OpsRabbit rejects provider results that exceed the public row, column, nesting, 
 - Dashboard renders use a separate, stricter rate bucket because one render can execute multiple query-backed widgets.
 - A dashboard render independently checks every saved query used by its widgets.
 - A missing read grant is intentionally indistinguishable from a missing resource.
-- The SDK does not persist definitions or results. If the integrating application caches or exports them, that application owns the resulting authorization, retention, and deletion obligations.
+- The SDK does not persist definitions, results, or interactive layout state. If the integrating application stores layouts, caches, or exports, that application owns the resulting authorization, retention, and deletion obligations.
 - SDK access is read-only. Service principals cannot create, update, delete, or become owners of saved queries and dashboards through this API.
