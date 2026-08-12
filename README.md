@@ -107,12 +107,26 @@ controller.abort();
 
 Aborting the local stream does not stop the OpsRabbit turn. Call `chat.turns.stop({ threadId })` when the user intends to stop server-side execution.
 
+## Render published Insights
+
+OpsRabbit administrators can grant an Embedded Chat preset access to selected Data Insight dashboards and saved semantic queries. The SDK returns framework-neutral definitions and results:
+
+```ts
+const available = await chat.insights.dashboards.list();
+const rendered = await chat.insights.dashboards.render(available.dashboards[0].id, {
+  range: "30d",
+});
+```
+
+OpsRabbit uses [Apache ECharts](https://echarts.apache.org/) 6 for its own Data Insight visualizations. Applications wanting similar behavior can use ECharts, but it is not an SDK dependency and any charting or design system can render the returned data. See [Data Insight and ECharts](docs/insights.md).
+
 ## Documentation
 
 - [End-to-end OpsRabbit setup](docs/setup.md)
 - [Authentication and security](docs/authentication.md)
 - [Conversations and streaming](docs/conversations.md)
 - [API reference](docs/api.md)
+- [Data Insight dashboards and ECharts](docs/insights.md)
 - [Vanilla browser example](examples/vanilla/README.md)
 - [Token endpoint example](examples/token-server/README.md)
 - [Security policy](SECURITY.md)

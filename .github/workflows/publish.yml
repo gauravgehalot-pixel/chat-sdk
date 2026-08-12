@@ -37,8 +37,13 @@ jobs:
           else
             echo "publish=true" >> "$GITHUB_OUTPUT"
           fi
-      - name: Publish beta with provenance
+      - name: Publish with provenance
         if: steps.version.outputs.publish == 'true'
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: npm publish --access public --provenance --tag beta
+        shell: bash
+        run: |
+          package_major=$(node -p 'require("./package.json").version.split(".")[0]')
+          if [ "$package_major" = "0" ]; then
+            npm publish --access public --provenance --tag beta
+          else
+            npm publish --access public --provenance --tag latest
+          fi

@@ -14,7 +14,7 @@ Optional `fetch` supplies a standards-compatible Fetch implementation for testin
 
 ## Configuration
 
-`getConfiguration(options?)` returns the effective contract version, widget/tenant/agent identity, external identity attribution, retention, and scrubbed presentation settings.
+`getConfiguration(options?)` returns the effective contract version, widget/tenant/agent identity, external identity attribution, retention, scrubbed presentation settings, and capability flags. Check `configuration.capabilities.insights` when an application can connect to OpsRabbit hosts older than the SDK's Insights boundary; older hosts report it as `false`.
 
 ## Conversations
 
@@ -40,6 +40,22 @@ Every request and stream accepts an `AbortSignal`. Stream options additionally a
 ## Citations
 
 `citations.read({ threadId, messageId, sourceId, documentId }, options?)` returns an `ArrayBuffer`, media type, and content disposition after OpsRabbit revalidates citation membership and thread access.
+
+## Data Insight
+
+Saved semantic queries:
+
+- `insights.queries.list({ limit? }, options?)`
+- `insights.queries.get(queryId, options?)`
+- `insights.queries.run(queryId, options?)`
+
+Dashboards:
+
+- `insights.dashboards.list({ limit? }, options?)`
+- `insights.dashboards.get(dashboardId, options?)`
+- `insights.dashboards.render(dashboardId, { range?, agentBases?, sourceId?, hourlyCostUsd?, minutesSaved? }, options?)`
+
+These methods expose only resources explicitly visible to the Embedded Chat preset's service principal. They do not create, update, delete, or grant resources. See [Data Insight and dashboard rendering](insights.md).
 
 ## Errors
 

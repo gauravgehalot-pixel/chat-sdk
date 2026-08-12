@@ -60,6 +60,8 @@ See the [token server example](../examples/token-server/README.md). Its environm
 
 The SDK gets a token for each call, allowing the customer backend to stop issuance immediately. OpsRabbit independently revalidates the enabled widget, tenant, entitlement, service principal, agent use permission, exact conversation binding, and thread grant. Existing streams retain only the authority represented by their authenticated connection and host runtime checks; applications should reconnect with a new token when resuming.
 
+Data Insight calls use the same token but a different resource scope. OpsRabbit evaluates dashboard and saved-query grants against the preset service principal on every request. Unlike conversations, Insight visibility is not partitioned by `external_user_id`; every authenticated user of one preset receives the same published Insight set. Do not grant a preset access to a dashboard or query unless every user authorized to obtain that preset's token may access it.
+
 ## CORS and origins
 
 Configure every production frontend origin in the Embedded Chat preset. Do not use wildcard production origins. CORS and origin checks reduce misuse from other browser origins, but they do not replace JWT verification or resource authorization.

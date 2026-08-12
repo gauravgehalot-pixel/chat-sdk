@@ -7,7 +7,13 @@ export type TokenRequestReason =
   | "stop_turn"
   | "steer_turn"
   | "resolve_approval"
-  | "read_citation";
+  | "read_citation"
+  | "list_insight_queries"
+  | "get_insight_query"
+  | "run_insight_query"
+  | "list_insight_dashboards"
+  | "get_insight_dashboard"
+  | "render_insight_dashboard";
 
 export interface AccessTokenContext {
   reason: TokenRequestReason;
@@ -46,6 +52,7 @@ export interface ChatConfiguration {
   externalDisplayName: string | null;
   threadRetentionMinutes: number;
   settings: Readonly<Record<string, unknown>>;
+  capabilities: Readonly<{ insights: boolean }>;
 }
 
 export interface ListConversationsInput {
@@ -168,6 +175,81 @@ export interface CitationContent {
   bytes: ArrayBuffer;
   contentType: string;
   contentDisposition: string | null;
+}
+
+export interface ListInsightsInput {
+  limit?: number;
+}
+
+export type InsightWidgetType = "metric" | "table" | "text" | "bar" | "line" | "area" | "pie" | "donut" | "scatter";
+
+export interface SavedInsightQuery {
+  id: string;
+  name: string;
+  description: string | null;
+  providerPluginId: string;
+  datasetId: string | null;
+  semanticQuery: Readonly<JsonObject>;
+  visualizationHint: string | null;
+  createdAt: string | null;
+  updatedAt: string | null;
+}
+
+export interface SavedInsightQueryList {
+  queries: readonly SavedInsightQuery[];
+}
+
+export interface SavedInsightQueryResult {
+  query: SavedInsightQuery;
+  result: unknown;
+}
+
+export interface InsightDashboardWidget {
+  id: string;
+  type: InsightWidgetType;
+  title: string;
+  description: string | null;
+  savedQueryId: string | null;
+  textContent: string | null;
+  config: Readonly<JsonObject>;
+  position: Readonly<JsonObject>;
+  createdAt: string | null;
+  updatedAt: string | null;
+}
+
+export interface InsightDashboard {
+  id: string;
+  title: string;
+  description: string | null;
+  layout: Readonly<JsonObject>;
+  widgets: readonly InsightDashboardWidget[];
+  createdAt: string | null;
+  updatedAt: string | null;
+}
+
+export interface InsightDashboardList {
+  dashboards: readonly InsightDashboard[];
+}
+
+export interface RenderInsightDashboardInput {
+  range?: string;
+  agentBases?: readonly string[];
+  sourceId?: string | null;
+  hourlyCostUsd?: number;
+  minutesSaved?: number;
+}
+
+export interface RenderedInsightWidget {
+  widget: InsightDashboardWidget;
+  ok: boolean;
+  query?: SavedInsightQuery;
+  result?: unknown;
+  error?: string;
+}
+
+export interface RenderedInsightDashboard {
+  dashboard: InsightDashboard;
+  widgets: readonly RenderedInsightWidget[];
 }
 
 export interface AssistantTextEvent {
