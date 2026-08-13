@@ -1,10 +1,10 @@
 {
   "name": "@opsrabbit/chat",
-  "version": "0.2.0",
-  "description": "Headless TypeScript SDK for integrating OpsRabbit agents and conversations into web applications.",
+  "version": "0.3.0",
+  "description": "TypeScript SDK and framework-neutral web component for integrating OpsRabbit chat.",
   "license": "Apache-2.0",
   "type": "module",
-  "sideEffects": false,
+  "sideEffects": ["./dist/widget.js"],
   "engines": {
     "node": ">=20.0.0"
   },
@@ -24,6 +24,14 @@
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
+    },
+    "./widget": {
+      "types": "./dist/widget.d.ts",
+      "import": "./dist/widget.js"
+    },
+    "./testing": {
+      "types": "./dist/testing.d.ts",
+      "import": "./dist/testing.js"
     }
   },
   "scripts": {
@@ -41,6 +49,7 @@
     "@types/node": "^24.10.0",
     "@vitest/coverage-v8": "^4.1.10",
     "eslint": "^10.0.1",
+    "happy-dom": "^20.8.3",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.64.0",
     "vitest": "^4.1.10"

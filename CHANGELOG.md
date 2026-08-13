@@ -2,6 +2,12 @@
 
 All notable changes to `@opsrabbit/chat` are documented here. The project follows Semantic Versioning after the `1.0.0` contract is declared stable.
 
+## 0.3.0 - 2026-08-13
+
+- Added the framework-neutral `<opsrabbit-chat>` web component with plain JavaScript and Angular guidance.
+- Added a Node-only RS256 development token helper and equivalent Python documentation.
+- Kept all private-key handling outside browser code; the widget obtains short-lived tokens from an authenticated application backend.
+
 ## 0.2.0 - 2026-08-12
 
 - Added caller-scoped conversation search across titles and persisted user/assistant messages through `conversations.list({ search })`.

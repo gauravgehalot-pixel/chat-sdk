@@ -55,6 +55,7 @@ The endpoint that supplies tokens to `getAccessToken` must:
 - rate-limit issuance appropriately.
 
 See the [token server example](../examples/token-server/README.md). Its environment variable names are example-application configuration, not new OpsRabbit product configuration.
+Node and Python patterns are also documented in [development token helpers](testing-tokens.md). Those helpers are server-only; the widget never accepts a private signing key.
 
 ## Revocation and expiry
 

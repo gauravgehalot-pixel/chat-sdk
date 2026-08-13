@@ -6,7 +6,7 @@
     "sourceMap": true,
     "outDir": "dist",
     "rootDir": "src",
-    "types": []
+    "types": ["node"]
   },
   "include": ["src/**/*.ts"],
   "exclude": ["test", "dist"]
