@@ -42,7 +42,7 @@ Create one saved Embedded Chat preset and SDK client per agent when your UI can 
 ## List conversations
 
 ```ts
-const page = await chat.conversations.list({ limit: 20 });
+const page = await chat.conversations.list({ search: "payment failure", limit: 20 });
 
 for (const conversation of page.conversations) {
   console.log(conversation.id, conversation.title, conversation.updatedAt);
@@ -52,6 +52,7 @@ if (page.nextCursor) {
   const nextPage = await chat.conversations.list({
     limit: 20,
     cursor: page.nextCursor,
+    search: "payment failure",
   });
 }
 ```
@@ -61,7 +62,10 @@ OpsRabbit returns only conversations bound to the token's exact external user, w
 ## Send and stream
 
 ```ts
-const conversation = chat.conversations.create();
+const conversation = chat.conversations.create({
+  context: { accountId: "acct-123", orderId: "order-456", locale: "en-US" },
+  bindings: { workspaceId: "workspace-123" },
+});
 const turn = await conversation.send({ message: "Why did checkout fail?" });
 
 for await (const event of chat.turns.events({

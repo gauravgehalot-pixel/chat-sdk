@@ -51,6 +51,7 @@ export interface ChatConfiguration {
 export interface ListConversationsInput {
   limit?: number;
   cursor?: string;
+  search?: string;
 }
 
 export interface ConversationSummary {
@@ -109,6 +110,7 @@ export interface Conversation extends ConversationSummary {
 export interface CreateConversationInput {
   conversationId?: string;
   context?: JsonObject;
+  bindings?: JsonObject;
 }
 
 export type JsonPrimitive = string | number | boolean | null;
