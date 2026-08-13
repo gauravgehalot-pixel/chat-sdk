@@ -67,7 +67,7 @@ describe("OpsRabbitChat configuration", () => {
     expect(getToken).toHaveBeenCalledWith({ reason: "configuration", agentName: "support-agent", widgetId: "widget-1", tenantId: "tenant-a" });
     const [, request] = firstFetchCall(fetchMock);
     expect(new Headers(request?.headers).get("authorization")).toBe("Bearer token-1");
-    expect(new Headers(request?.headers).get("x-opsrabbit-chat-sdk-version")).toBe("0.2.0");
+    expect(new Headers(request?.headers).get("x-opsrabbit-chat-sdk-version")).toBe("0.3.0");
   });
 
   it("uses safe defaults for optional configuration attribution", async () => {

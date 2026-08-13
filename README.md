@@ -1,8 +1,8 @@
 # `@opsrabbit/chat`
 
-Headless TypeScript SDK for integrating OpsRabbit agents and caller-scoped conversation history into web applications.
+TypeScript SDK and optional framework-neutral chat widget for integrating OpsRabbit agents and caller-scoped conversation history into web applications.
 
-The SDK supplies transport, public types, safe error mapping, and replayable event parsing. It does not render UI, persist messages, mint credentials, or grant access. Your backend authenticates your user and issues a short-lived OpsRabbit Embedded Chat JWT; OpsRabbit remains responsible for tenant isolation, agent and thread permissions, retention, event scrubbing, approvals, and rate limits.
+The SDK supplies transport, public types, safe error mapping, replayable event parsing, and an optional web-component UI. It does not persist messages, mint browser credentials, or grant access. Your backend authenticates your user and issues a short-lived OpsRabbit Embedded Chat JWT; OpsRabbit remains responsible for tenant isolation, agent and thread permissions, retention, event scrubbing, approvals, and rate limits.
 
 ## Install
 
@@ -15,6 +15,8 @@ Before creating a client, an OpsRabbit administrator and the customer backend ow
 The initial release is ESM-only and targets modern browsers. Node.js 20 or newer is supported for server-rendering and tests through its standards-compatible Fetch and Web Streams APIs. Repository development and publication use the version pinned in `.nvmrc`.
 
 ## Create a client
+
+For a quick UI, import `@opsrabbit/chat/widget` and use `<opsrabbit-chat>`. See the [widget guide, including Angular](docs/widget.md).
 
 ```ts
 import { OpsRabbitChat } from "@opsrabbit/chat";
@@ -115,6 +117,8 @@ Aborting the local stream does not stop the OpsRabbit turn. Call `chat.turns.sto
 
 - [End-to-end OpsRabbit setup](docs/setup.md)
 - [Authentication and security](docs/authentication.md)
+- [Drop-in widget and Angular integration](docs/widget.md)
+- [Node and Python development token helpers](docs/testing-tokens.md)
 - [Conversations and streaming](docs/conversations.md)
 - [API reference](docs/api.md)
 - [Vanilla browser example](examples/vanilla/README.md)
