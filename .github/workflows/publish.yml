@@ -52,9 +52,26 @@ jobs:
           package_version=$(node -p 'require("./package.json").version')
           npm dist-tag add "${package_name}@${package_version}" latest
       - name: Verify latest dist-tag
+        timeout-minutes: 20
         shell: bash
         run: |
           package_name=$(node -p 'require("./package.json").name')
           package_version=$(node -p 'require("./package.json").version')
-          latest_version=$(npm view "${package_name}" dist-tags.latest)
-          test "$latest_version" = "$package_version"
+          # npm scans new releases before making them publicly available.
+          # Poll fresh registry metadata for up to ten minutes between queries.
+          for attempt in {1..21}; do
+            if latest_version=$(npm view "${package_name}" dist-tags.latest --prefer-online --fetch-retries=0 --fetch-timeout=15000); then
+              if [ "$latest_version" = "$package_version" ]; then
+                echo "Verified ${package_name}@${package_version} is latest."
+                exit 0
+              fi
+              echo "Attempt ${attempt}/21: latest is '${latest_version}'; expected '${package_version}'."
+            else
+              echo "Attempt ${attempt}/21: registry lookup failed; expected '${package_version}'."
+            fi
+            if [ "$attempt" -lt 21 ]; then
+              sleep 30
+            fi
+          done
+          echo "::error::npm latest did not resolve to ${package_name}@${package_version} within the verification window. Check npm processing status before rerunning."
+          exit 1
