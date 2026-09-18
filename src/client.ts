@@ -36,7 +36,7 @@ import type {
   Turn,
 } from "./types.js";
 
-const SDK_VERSION = "0.3.0";
+const SDK_VERSION = "0.4.0";
 const MAX_CONTEXT_BYTES = 16 * 1024;
 const MAX_CONTEXT_DEPTH = 8;
 const MAX_CONTEXT_KEYS = 64;

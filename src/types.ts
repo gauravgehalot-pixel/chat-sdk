@@ -28,6 +28,14 @@ export interface OpsRabbitChatOptions {
   fetch?: typeof globalThis.fetch;
 }
 
+/**
+ * Options for a direct React Native client. The application's trusted backend
+ * still mints the access token after it verifies device/app attestation.
+ */
+export type NativeOpsRabbitChatOptions = Omit<OpsRabbitChatOptions, "fetch"> & {
+  fetch: typeof globalThis.fetch;
+};
+
 export interface RequestOptions {
   signal?: AbortSignal;
 }

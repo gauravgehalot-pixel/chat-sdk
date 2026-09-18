@@ -1,4 +1,5 @@
 export { OpsRabbitChat } from "./client.js";
+export { OpsRabbitNativeChat } from "./react-native.js";
 export {
   ChatAuthenticationError,
   ChatAuthorizationError,
