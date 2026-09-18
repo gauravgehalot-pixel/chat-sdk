@@ -14,6 +14,26 @@ Before creating a client, an OpsRabbit administrator and the customer backend ow
 
 The initial release is ESM-only and targets modern browsers. Node.js 20 or newer is supported for server-rendering and tests through its standards-compatible Fetch and Web Streams APIs. Repository development and publication use the version pinned in `.nvmrc`.
 
+## React Native
+
+Use the supported headless native export with a saved **native** Embedded Chat preset. The standard React Native global `fetch` does not provide a progressively readable SSE response body, so it is insufficient for chat streaming. Supply a streaming-capable Fetch implementation explicitly. Expo applications can use `expo/fetch`; other runtimes must provide an equivalent standards-compatible implementation with `Headers`, `TextEncoder`, and readable response streams. The native app obtains a fresh short-lived token from its own authenticated backend; that backend must verify platform attestation (for example App Attest/Play Integrity) before signing the token. Never bundle the RSA signing key, an OpsRabbit administrative credential, or an attestation-provider secret in the app.
+
+```ts
+import { OpsRabbitNativeChat } from "@opsrabbit/chat/react-native";
+import { fetch as expoFetch } from "expo/fetch";
+
+const chat = new OpsRabbitNativeChat({
+  baseUrl: "https://opsrabbit.example.com/api",
+  widgetId: "ecw_mobile_support",
+  tenantId: "tenant-a",
+  agentName: "support-agent",
+  getAccessToken: ({ signal }) => getMobileChatToken(signal),
+  fetch: expoFetch,
+});
+```
+
+The registered native client ID is an identifier, not an app secret. Keep it in the customer backend and place it only in that backend's signed token after app attestation succeeds; the SDK never needs it.
+
 ## Create a client
 
 For a quick UI, import `@opsrabbit/chat/widget` and use `<opsrabbit-chat>`. See the [widget guide, including Angular](docs/widget.md).

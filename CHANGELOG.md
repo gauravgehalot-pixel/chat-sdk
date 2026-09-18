@@ -2,6 +2,12 @@
 
 All notable changes to `@opsrabbit/chat` are documented here. The project follows Semantic Versioning after the `1.0.0` contract is declared stable.
 
+## 0.4.0 - 2026-09-17
+
+- Added the headless `@opsrabbit/chat/react-native` export for direct native Embedded Chat transports.
+- Added fixed native-client context to token-provider callbacks, without sending an `Origin` header or retaining tokens.
+- Documented the server-attestation token contract and React Native fetch/Web Streams prerequisites.
+
 ## 0.3.0 - 2026-08-13
 
 - Added the framework-neutral `<opsrabbit-chat>` web component with plain JavaScript and Angular guidance.
