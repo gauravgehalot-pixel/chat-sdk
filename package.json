@@ -45,6 +45,7 @@
     "test": "vitest run --maxWorkers=1 --no-file-parallelism",
     "test:coverage": "vitest run --coverage --maxWorkers=1 --no-file-parallelism",
     "pack:verify": "node scripts/verify-package.mjs",
+    "prepare": "npm run build",
     "quality": "npm run lint && npm run check && npm run test:coverage && npm run build && npm run pack:verify",
     "prepack": "npm run build"
   },
