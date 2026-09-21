@@ -2,6 +2,12 @@
 
 All notable changes to `@opsrabbit/chat` are documented here. The project follows Semantic Versioning after the `1.0.0` contract is declared stable.
 
+## 0.5.0 - 2026-09-21
+
+- Added the typed, closed-enum `ClientActionEvent` to streamed chat events.
+- Reject malformed, unknown, and URL-like navigation actions instead of converting them into links.
+- Kept client actions non-executable: hosts must map the target to their own approved UI destination.
+
 ## 0.4.0 - 2026-09-17
 
 - Added the headless `@opsrabbit/chat/react-native` export for direct native Embedded Chat transports.

@@ -36,7 +36,7 @@ import type {
   Turn,
 } from "./types.js";
 
-const SDK_VERSION = "0.4.0";
+const SDK_VERSION = "0.5.0";
 const MAX_CONTEXT_BYTES = 16 * 1024;
 const MAX_CONTEXT_DEPTH = 8;
 const MAX_CONTEXT_KEYS = 64;
@@ -103,7 +103,16 @@ function snapshotJsonObject(value: unknown, field = "context"): JsonRecord | und
   return snapshot;
 }
 
-function normalizeBaseUrl(value: string): string {
+function isPrivateNetworkHost(hostname: string): boolean {
+  const octets = hostname.split(".").map((part) => Number(part));
+  if (octets.length !== 4 || octets.some((part) => !Number.isInteger(part) || part < 0 || part > 255)) return false;
+  const [first, second] = octets;
+  return first === 10
+    || (first === 172 && second !== undefined && second >= 16 && second <= 31)
+    || (first === 192 && second === 168);
+}
+
+function normalizeBaseUrl(value: string, allowInsecurePrivateNetworkHttp = false): string {
   let url: URL;
   try {
     url = new URL(value);
@@ -114,7 +123,8 @@ function normalizeBaseUrl(value: string): string {
     throw new ChatConfigurationError("baseUrl must not include URL credentials.");
   }
   const local = url.hostname === "localhost" || url.hostname === "127.0.0.1" || url.hostname === "[::1]";
-  if (url.protocol !== "https:" && !(url.protocol === "http:" && local)) {
+  const explicitlyAllowedPrivateHttp = allowInsecurePrivateNetworkHttp && isPrivateNetworkHost(url.hostname);
+  if (url.protocol !== "https:" && !(url.protocol === "http:" && (local || explicitlyAllowedPrivateHttp))) {
     throw new ChatConfigurationError("baseUrl must use HTTPS except on loopback development hosts.");
   }
   url.hash = "";
@@ -217,7 +227,7 @@ export class OpsRabbitChat {
   readonly #fetch: typeof globalThis.fetch;
 
   constructor(options: OpsRabbitChatOptions) {
-    this.#baseUrl = normalizeBaseUrl(options.baseUrl);
+    this.#baseUrl = normalizeBaseUrl(options.baseUrl, options.allowInsecurePrivateNetworkHttp === true);
     this.#widgetId = normalizeIdentifier(options.widgetId, "widgetId");
     this.#tenantId = normalizeIdentifier(options.tenantId, "tenantId");
     this.#agentName = normalizeIdentifier(options.agentName, "agentName");

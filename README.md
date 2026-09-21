@@ -4,6 +4,10 @@ TypeScript SDK and optional framework-neutral chat widget for integrating OpsRab
 
 The SDK supplies transport, public types, safe error mapping, replayable event parsing, and an optional web-component UI. It does not persist messages, mint browser credentials, or grant access. Your backend authenticates your user and issues a short-lived OpsRabbit Embedded Chat JWT; OpsRabbit remains responsible for tenant isolation, agent and thread permissions, retention, event scrubbing, approvals, and rate limits.
 
+`ChatEvent` includes `clientAction` for a trusted host-generated navigation hint.
+It contains a closed target enum and localization key, never a URL or executable
+payload; malformed actions map to `unknown` and must be ignored.
+
 ## Install
 
 ```bash

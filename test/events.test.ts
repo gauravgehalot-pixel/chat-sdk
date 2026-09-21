@@ -40,6 +40,25 @@ describe("mapChatEvent", () => {
     expect(mapChatEvent({ type: "future_event", event_id: 10, turn_id: "turn-1", secret: "omitted" })).toEqual({ type: "unknown", eventId: 10, turnId: "turn-1", rawType: "future_event" });
     expect(mapChatEvent(null)).toEqual({ type: "unknown", rawType: "unknown" });
   });
+
+  it("accepts only closed, non-executable client actions", () => {
+    expect(mapChatEvent({ type: "client_action", event_id: 11, turn_id: "turn-1", target: "bookings", label_key: "chat.cta.bookings", resource_ref: "booking_1" })).toEqual({
+      type: "clientAction", eventId: 11, turnId: "turn-1", target: "bookings", labelKey: "chat.cta.bookings", resourceRef: "booking_1",
+    });
+    expect(mapChatEvent({ type: "client_action", event_id: 11, turn_id: "turn-1", target: "admin_campaigns", label_key: "chat.cta.campaigns" })).toMatchObject({
+      type: "clientAction", target: "admin_campaigns", labelKey: "chat.cta.campaigns",
+    });
+    expect(mapChatEvent({ type: "client_action", event_id: 12, target: "https://example.test", label_key: "chat.cta.bookings" })).toMatchObject({ type: "unknown" });
+    expect(mapChatEvent({ type: "client_action", event_id: 13, target: "bookings", label_key: "javascript:alert(1)" })).toMatchObject({ type: "unknown" });
+  });
+
+  it("accepts only structurally safe opaque suggested follow-up ids", () => {
+    expect(mapChatEvent({ type: "suggested_follow_up", event_id: 14, turn_id: "turn-1", suggestion_id: "customer_service_history" })).toEqual({
+      type: "suggestedFollowUp", eventId: 14, turnId: "turn-1", suggestionId: "customer_service_history",
+    });
+    expect(mapChatEvent({ type: "suggested_follow_up", event_id: 15, suggestion_id: "show me parts" })).toMatchObject({ type: "unknown" });
+    expect(mapChatEvent({ type: "suggested_follow_up", event_id: 16, suggestion_id: "javascript:alert" })).toMatchObject({ type: "unknown" });
+  });
 });
 
 describe("parseEventStream", () => {

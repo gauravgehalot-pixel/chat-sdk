@@ -21,6 +21,11 @@ export type AccessTokenProvider = (context: AccessTokenContext) => Promise<strin
 
 export interface OpsRabbitChatOptions {
   baseUrl: string;
+  /**
+   * Development-only escape hatch for a private-network HTTP endpoint. Hosts
+   * must set this explicitly; production integrations must use HTTPS.
+   */
+  allowInsecurePrivateNetworkHttp?: boolean;
   widgetId: string;
   tenantId: string;
   agentName: string;
@@ -212,6 +217,36 @@ export interface ApprovalRequestedEvent {
   summary: string;
 }
 
+/** A host-generated navigation hint. It deliberately contains no URL or executable payload. */
+export type ClientActionTarget =
+  | "bookings"
+  | "offers"
+  | "catalogue"
+  | "support"
+  | "welcome"
+  | "admin_customers"
+  | "admin_bookings"
+  | "admin_support"
+  | "admin_reports"
+  | "admin_campaigns";
+
+export interface ClientActionEvent {
+  type: "clientAction";
+  eventId: number;
+  turnId: string;
+  target: ClientActionTarget;
+  labelKey: string;
+  resourceRef?: string;
+}
+
+/** A host-generated, opaque suggested question. Clients map the closed id to their own safe copy before sending it. */
+export interface SuggestedFollowUpEvent {
+  type: "suggestedFollowUp";
+  eventId: number;
+  turnId: string;
+  suggestionId: string;
+}
+
 export interface UnknownEvent {
   type: "unknown";
   eventId?: number;
@@ -224,6 +259,8 @@ export type ChatEvent =
   | ActivityEvent
   | TurnStateEvent
   | ApprovalRequestedEvent
+  | ClientActionEvent
+  | SuggestedFollowUpEvent
   | UnknownEvent;
 
 export interface ConversationHandle {

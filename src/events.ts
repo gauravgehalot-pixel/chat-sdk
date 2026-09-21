@@ -1,5 +1,5 @@
 import { ChatProtocolError } from "./errors.js";
-import type { ChatEvent } from "./types.js";
+import type { ChatEvent, ClientActionTarget } from "./types.js";
 
 const DEFAULT_MAX_EVENT_BYTES = 256 * 1024;
 const DEFAULT_MAX_BUFFER_BYTES = 512 * 1024;
@@ -18,11 +18,63 @@ function integer(value: unknown): number | undefined {
   return typeof value === "number" && Number.isSafeInteger(value) && value >= 0 ? value : undefined;
 }
 
+const CLIENT_ACTION_TARGETS = new Set<ClientActionTarget>([
+  "bookings", "offers", "catalogue", "support", "welcome",
+  "admin_customers", "admin_bookings", "admin_support", "admin_reports", "admin_campaigns",
+]);
+const CLIENT_ACTION_LABEL_KEY = /^[a-z][a-z0-9_.-]{0,79}$/u;
+const CLIENT_ACTION_RESOURCE_REF = /^[A-Za-z0-9_-]{1,160}$/u;
+const SUGGESTED_FOLLOW_UP_ID = /^[a-z][a-z0-9_]{0,79}$/u;
+
+function clientAction(event: Record<string, unknown>, eventId: number, turnId: string): ChatEvent | undefined {
+  const target = text(event.target);
+  const labelKey = text(event.label_key);
+  const resourceRef = text(event.resource_ref);
+  if (!CLIENT_ACTION_TARGETS.has(target as ClientActionTarget) || !CLIENT_ACTION_LABEL_KEY.test(labelKey)) {
+    return undefined;
+  }
+  if (resourceRef && !CLIENT_ACTION_RESOURCE_REF.test(resourceRef)) {
+    return undefined;
+  }
+  return {
+    type: "clientAction",
+    eventId,
+    turnId,
+    target: target as ClientActionTarget,
+    labelKey,
+    ...(resourceRef ? { resourceRef } : {}),
+  };
+}
+
+function suggestedFollowUp(event: Record<string, unknown>, eventId: number, turnId: string): ChatEvent | undefined {
+  const suggestionId = text(event.suggestion_id);
+  if (!SUGGESTED_FOLLOW_UP_ID.test(suggestionId)) return undefined;
+  return { type: "suggestedFollowUp", eventId, turnId, suggestionId };
+}
+
 export function mapChatEvent(value: unknown): ChatEvent {
   const event = record(value);
   const rawType = text(event.type) || "unknown";
   const eventId = integer(event.event_id) ?? 0;
   const turnId = text(event.turn_id);
+
+  if (rawType === "client_action") {
+    return clientAction(event, eventId, turnId) ?? {
+      type: "unknown",
+      ...(integer(event.event_id) !== undefined ? { eventId } : {}),
+      ...(turnId ? { turnId } : {}),
+      rawType,
+    };
+  }
+
+  if (rawType === "suggested_follow_up") {
+    return suggestedFollowUp(event, eventId, turnId) ?? {
+      type: "unknown",
+      ...(integer(event.event_id) !== undefined ? { eventId } : {}),
+      ...(turnId ? { turnId } : {}),
+      rawType,
+    };
+  }
 
   if (["assistant_message", "message_delta", "text_delta", "done"].includes(rawType)) {
     return {

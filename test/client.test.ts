@@ -54,6 +54,13 @@ describe("OpsRabbitChat configuration", () => {
     expect(() => new OpsRabbitChat({ ...base, baseUrl: "https://example.com", getAccessToken: null as never })).toThrow("getAccessToken");
   });
 
+  it("allows private-network HTTP only when a development host opts in", () => {
+    const base = { widgetId: "w", tenantId: "t", agentName: "a", getAccessToken: () => "token" };
+    expect(() => new OpsRabbitChat({ ...base, baseUrl: "http://192.168.0.129:8384" })).toThrow("HTTPS");
+    expect(() => new OpsRabbitChat({ ...base, baseUrl: "http://192.168.0.129:8384", allowInsecurePrivateNetworkHttp: true })).not.toThrow();
+    expect(() => new OpsRabbitChat({ ...base, baseUrl: "http://203.0.113.1:8384", allowInsecurePrivateNetworkHttp: true })).toThrow("HTTPS");
+  });
+
   it("loads the effective, versioned server configuration", async () => {
     const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(json({
       chat_api_version: "1",
@@ -67,7 +74,7 @@ describe("OpsRabbitChat configuration", () => {
     expect(getToken).toHaveBeenCalledWith({ reason: "configuration", agentName: "support-agent", widgetId: "widget-1", tenantId: "tenant-a" });
     const [, request] = firstFetchCall(fetchMock);
     expect(new Headers(request?.headers).get("authorization")).toBe("Bearer token-1");
-    expect(new Headers(request?.headers).get("x-opsrabbit-chat-sdk-version")).toBe("0.4.0");
+    expect(new Headers(request?.headers).get("x-opsrabbit-chat-sdk-version")).toBe("0.5.0");
   });
 
   it("uses safe defaults for optional configuration attribution", async () => {
