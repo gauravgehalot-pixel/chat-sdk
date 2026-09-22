@@ -31,7 +31,9 @@
     },
     "./react-native": {
       "types": "./dist/react-native.d.ts",
-      "import": "./dist/react-native.js"
+      "react-native": "./dist/react-native.js",
+      "import": "./dist/react-native.js",
+      "default": "./dist/react-native.js"
     },
     "./testing": {
       "types": "./dist/testing.d.ts",
